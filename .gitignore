@@ -1,0 +1,7 @@
+*.zip
+*.out
+*.o
+*.txt
+__MACOSX
+.*
+!/.gitignore
