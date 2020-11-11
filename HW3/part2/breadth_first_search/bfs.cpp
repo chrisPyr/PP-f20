@@ -104,16 +104,18 @@ void bfs_top_down(Graph graph, solution *sol)
     }
 }
 
-void bfs_bottom_up_step(
+int bfs_bottom_up_step(
     Graph g,
     vertex_set *frontier,
     int *distances,
-    int *adj_front)
+    int *adj_front,
+    int *old)
     {
     
         int front_num = frontier -> count;
 
-        for(int i = 0; i< front_num;++i){
+        for(int i = *old; i< front_num;++i){
+
             int node = frontier->vertices[i];
 
             int start_edge = g->outgoing_starts[node];
@@ -125,17 +127,22 @@ void bfs_bottom_up_step(
                 adj_front[ g->outgoing_edges[j]]= frontier -> vertices[i];
             }
         }
-
+    int cnt=0;
         for (int i=0; i < g-> num_nodes ;++i){
+            
             
             if( distances[i] == NOT_VISITED_MARKER && adj_front[i] != -1 ){
                 
                 distances[i]=distances[adj_front[i]]+1;
                 frontier->vertices[frontier->count] = i;
                 frontier ->count++;
+                cnt++;
             }
 
-        }    
+        }
+        if(cnt == 0) return 0;
+        *old = (frontier -> count) - cnt;    
+        return 1;
     }
 
 
@@ -158,6 +165,7 @@ void bfs_bottom_up(Graph graph, solution *sol)
             adj_front[i]=-1;
         }
 
+    int *old_count= new int(0);
     
     vertex_set list1;
     vertex_set_init(&list1, graph->num_nodes);
@@ -171,9 +179,12 @@ void bfs_bottom_up(Graph graph, solution *sol)
     adj_front[ROOT_NODE_ID] = 0;
 
     while(frontier->count != graph -> num_nodes){
-        bfs_bottom_up_step(graph,frontier,sol->distances,adj_front);
+        if(bfs_bottom_up_step(graph,frontier,sol->distances,adj_front,old_count)==0)
+        break;
     }
     delete [] adj_front;
+    delete old_count;
+    
 }
 
 void bfs_hybrid(Graph graph, solution *sol)
