@@ -5,3 +5,4 @@
 __MACOSX
 .*
 !/.gitignore
+*.tmp
