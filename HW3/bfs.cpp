@@ -5,7 +5,7 @@
 #include <string.h>
 #include <cstddef>
 #include <omp.h>
-#include<iostream>
+
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
 
@@ -108,11 +108,11 @@ int bfs_bottom_up_step(
     Graph g,
     vertex_set *frontier,
     int *distances,
-    int *old,
-    vertex_set *new_frontier)
+    int *adj_front,
+    int *old)
     {
-        
-        /*int front_num = frontier -> count;
+    
+        int front_num = frontier -> count;
 
         for(int i = *old; i< front_num;++i){
 
@@ -143,43 +143,8 @@ int bfs_bottom_up_step(
         if(cnt == 0) return 0;
         *old = (frontier -> count) - cnt;    
         return 1;
-    */
-
-    int test =0;
-    int *tmp = new int[g->num_nodes];
-    for(int i =0 ;i < g -> num_nodes;++i){
-        
-        if(distances[i] == NOT_VISITED_MARKER){
-            int start_edge = g->incoming_starts[i];
-            int end_edge = (i == g->num_nodes - 1)
-                           ? g->num_edges
-                           : g->incoming_starts[i + 1];
-
-            for(int j= start_edge ; j<end_edge ; ++j){
-                int k = g->incoming_edges[j];
-                if(distances[k] != NOT_VISITED_MARKER){
-                    /*int tmp = distances[k]+1;
-                    if(tmp < distances[i] || distances[i] == NOT_VISITED_MARKER){
-                    distances[i] =tmp;
-                    } */
-                    int index = new_frontier->count++;
-                    new_frontier->vertices[index] = i;
-                    tmp[index] = distances[k]+1;
-                    test++;
-                    break;
-                }
-            }
-      }   
     }
 
-    for(int i =0 ; i < new_frontier->count;++i){
-        distances[new_frontier->vertices[i]]=tmp[i];
-    }
-    delete [] tmp;
-    //*old = (frontier -> count) - cnt
-    if (test==0) return 0;
-    return 1;
-    }
 
 void bfs_bottom_up(Graph graph, solution *sol)
 {
@@ -194,35 +159,31 @@ void bfs_bottom_up(Graph graph, solution *sol)
     // As was done in the top-down case, you may wish to organize your
     // code by creating subroutine bottom_up_step() that is called in
     // each step of the BFS process.
-    /*int *adj_front = new int[graph->num_nodes];
+    int *adj_front = new int[graph->num_nodes];
 
         for(int i=0;i<graph->num_nodes;++i){
             adj_front[i]=-1;
         }
-    */
-    int old_count=0;
+
+    int *old_count= new int(0);
     
     vertex_set list1;
-    vertex_set list2;
     vertex_set_init(&list1, graph->num_nodes);
-    vertex_set_init(&list2, graph->num_nodes);
     vertex_set *frontier = &list1;
-    vertex_set *new_frontier = &list2;
 
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
 
     frontier->vertices[frontier->count++] = ROOT_NODE_ID;
     sol->distances[ROOT_NODE_ID] = 0;
-   // adj_front[ROOT_NODE_ID] = 0;
+    adj_front[ROOT_NODE_ID] = 0;
 
-    while(1){
-        vertex_set_clear(new_frontier);
-        if( bfs_bottom_up_step(graph,frontier,sol->distances,&old_count,new_frontier)== 0 ) break;
-
+    while(frontier->count != graph -> num_nodes){
+        if(bfs_bottom_up_step(graph,frontier,sol->distances,adj_front,old_count)==0)
+        break;
     }
-    //delete [] adj_front;
-    //delete old_count;
+    delete [] adj_front;
+    delete old_count;
     
 }
 
