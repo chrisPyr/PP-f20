@@ -108,7 +108,6 @@ int bfs_bottom_up_step(
     Graph g,
     vertex_set *frontier,
     int *distances,
-    int *old,
     vertex_set *new_frontier)
     {
         
@@ -195,7 +194,6 @@ void bfs_bottom_up(Graph graph, solution *sol)
             adj_front[i]=-1;
         }
     */
-    int old_count=0;
     
     vertex_set list1;
     vertex_set list2;
@@ -211,9 +209,12 @@ void bfs_bottom_up(Graph graph, solution *sol)
     sol->distances[ROOT_NODE_ID] = 0;
    // adj_front[ROOT_NODE_ID] = 0;
 
-    while(1){
+    while(frontier->count!=0){
         vertex_set_clear(new_frontier);
-        if( bfs_bottom_up_step(graph,frontier,sol->distances,&old_count,new_frontier)== 0 ) break;
+        bfs_bottom_up_step(graph,frontier,sol->distances,new_frontier)== 0 ;
+         vertex_set *tmp = frontier;
+        frontier = new_frontier;
+        new_frontier = tmp;
 
     }
     //delete [] adj_front;
@@ -227,4 +228,46 @@ void bfs_hybrid(Graph graph, solution *sol)
     //
     // You will need to implement the "hybrid" BFS here as
     // described in the handout.
+
+    vertex_set list1;
+    vertex_set list2;
+    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set_init(&list2, graph->num_nodes);
+
+    vertex_set *frontier = &list1;
+    vertex_set *new_frontier = &list2;
+
+    // initialize all nodes to NOT_VISITED
+    for (int i = 0; i < graph->num_nodes; i++)
+        sol->distances[i] = NOT_VISITED_MARKER;
+
+    // setup frontier with the root node
+    frontier->vertices[frontier->count++] = ROOT_NODE_ID;
+    sol->distances[ROOT_NODE_ID] = 0;
+
+    while(frontier->count!= 0){
+
+        int mf=0 ;
+        int nf=frontier->count;
+        int mu=0;
+        for(int i =0 ; i< frontier->count;++i){
+            mf += outgoing_size(graph,frontier->vertices[i]);
+        }
+        for(int i=0;i<graph->num_nodes;++i){
+            if(sol->distances[i] == NOT_VISITED_MARKER) mu++;
+        }
+
+        vertex_set_clear(new_frontier);
+        if(mf > mu /14) {
+            bfs_bottom_up_step(graph,frontier,sol->distances,new_frontier);
+        }else if(nf < graph->num_nodes / 24 ){
+            top_down_step(graph,frontier,new_frontier,sol->distances);
+        }
+
+        vertex_set *tmp = frontier;
+        frontier = new_frontier;
+        new_frontier = tmp;
+        
+    }
+
 }
