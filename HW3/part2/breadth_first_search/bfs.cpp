@@ -158,10 +158,6 @@ int bfs_bottom_up_step(
             for(int j= start_edge ; j<end_edge ; ++j){
                 int k = g->incoming_edges[j];
                 if(distances[k] != NOT_VISITED_MARKER){
-                    /*int tmp = distances[k]+1;
-                    if(tmp < distances[i] || distances[i] == NOT_VISITED_MARKER){
-                    distances[i] =tmp;
-                    } */
                     int index = new_frontier->count++;
                     new_frontier->vertices[index] = i;
                     tmp[index] = distances[k]+1;
@@ -176,7 +172,6 @@ int bfs_bottom_up_step(
         distances[new_frontier->vertices[i]]=tmp[i];
     }
     delete [] tmp;
-    //*old = (frontier -> count) - cnt
     if (test==0) return 0;
     return 1;
     }
