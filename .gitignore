@@ -7,3 +7,4 @@ __MACOSX
 !/.gitignore
 *.tmp
 *.data
+perf.*

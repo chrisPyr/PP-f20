@@ -81,7 +81,6 @@ void top_down_step(
             tmp_in[local_count] = i;    
             local_count++;
         }       
-        
     }
         count_lo[id] = local_count;
         #pragma omp barrier
