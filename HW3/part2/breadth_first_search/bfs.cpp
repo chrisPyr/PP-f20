@@ -36,7 +36,7 @@ void top_down_step(
     int *depth)
 {
     int global_count=0;
-    int count_lo[10]={0};
+    int count_lo[4]={0};
     
     #pragma omp parallel 
     {
@@ -60,11 +60,7 @@ void top_down_step(
             {   
                 
                 distances[outgoing]= *depth + 1;
-                /*do{
-                    index = new_frontier ->count;
-                }while(!__sync_bool_compare_and_swap(&(new_frontier->count),index,index+1));
                 
-                new_frontier->vertices[index]= outgoing;*/
             }
         }
 
@@ -73,12 +69,11 @@ void top_down_step(
     
     int local_count =0;
     int id=omp_get_thread_num();
-    int *tmp_in = new int[g->num_nodes];
+  
     #pragma omp for
     for(int i = 0; i< g->num_nodes;++i){
        
-        if(distances[i]== (*depth)+1){     
-            tmp_in[local_count] = i;    
+        if(distances[i]== (*depth)+1){       
             local_count++;
         }       
         
@@ -95,18 +90,15 @@ void top_down_step(
     for(int i =0; i < id ; ++i){
         start_index += count_lo[i];
     }
-
+    #pragma omp for
+    for(int i=0 ;i<g->num_nodes;++i){
+        if(distances[i]== (*depth)+1){
+            new_frontier->vertices[start_index]=i;
+            start_index++;
+        }
+    }
 
     
-    int end_index = start_index + count_lo[id];
-    int y =0;
-   
-    for(int i=start_index;i<end_index;++i){
-        new_frontier->vertices[i] = tmp_in[y];
-        y++;
-    }
-    delete [] tmp_in;
-
     }
 
      new_frontier->count = global_count;
@@ -173,7 +165,7 @@ void bfs_bottom_up_step(
     vertex_set *new_frontier,
     int *depth)
     {    
-    //int *tmp = new int[g->num_nodes];
+  
     int count_lo[4]={0};
     int global_count=0;
     #pragma omp parallel
@@ -191,14 +183,8 @@ void bfs_bottom_up_step(
                 int index;
                 if(distances[k] == *depth){   
                     
-                    /*do{
-                        index = new_frontier->count;
-                    }while(!__sync_bool_compare_and_swap(&(new_frontier->count),index,index+1));   
-                    */
-                    //new_frontier->vertices[index] = i;
-                    //tmp[index] = distances[k]+1;
-                   // new_frontier->count++;
                     distances[i] = (*depth)+1;
+                    
                     break;
                 }
             }
@@ -207,18 +193,16 @@ void bfs_bottom_up_step(
     }
     
     
-    /*for(int i =0 ; i < new_frontier->count;++i){
-        distances[new_frontier->vertices[i]]=tmp[i];
-    }*/
+  
     
     int local_count =0;
     int id=omp_get_thread_num();
-    int *tmp_in = new int[g->num_nodes];
+   
     #pragma omp for
     for(int i = 0; i< g->num_nodes;++i){
        
         if(distances[i]== (*depth)+1){     
-            tmp_in[local_count] = i;    
+               
             local_count++;
         }       
     }
@@ -228,29 +212,25 @@ void bfs_bottom_up_step(
         #pragma omp atomic
         global_count+=local_count;
        
-
     int start_index=0;
     
     for(int i =0; i < id ; ++i){
         start_index += count_lo[i];
     }
-
-
-    
-    int end_index = start_index + count_lo[id];
-    int y =0;
    
-    for(int i=start_index;i<end_index;++i){
-        new_frontier->vertices[i] = tmp_in[y];
-        y++;
+    #pragma omp for
+    for(int i=0;i<g->num_nodes;++i){
+        if(distances[i]==(*depth)+1){
+            new_frontier->vertices[start_index]=i;
+            start_index++;
+        }
     }
-    delete [] tmp_in;
+   
 
     }
 
      new_frontier->count = global_count;
     
-   
     
     }
     
@@ -268,12 +248,6 @@ void bfs_bottom_up(Graph graph, solution *sol)
     // As was done in the top-down case, you may wish to organize your
     // code by creating subroutine bottom_up_step() that is called in
     // each step of the BFS process.
-    /*int *adj_front = new int[graph->num_nodes];
-
-        for(int i=0;i<graph->num_nodes;++i){
-            adj_front[i]=-1;
-        }
-    */
     
     vertex_set list1;
     vertex_set list2;
@@ -289,19 +263,17 @@ void bfs_bottom_up(Graph graph, solution *sol)
     frontier->vertices[frontier->count++] = ROOT_NODE_ID;
     sol->distances[ROOT_NODE_ID] = 0;
    
-   // adj_front[ROOT_NODE_ID] = 0;
+  
 
     while(frontier->count!=0){
         vertex_set_clear(new_frontier);
-        bfs_bottom_up_step(graph,frontier,sol->distances,new_frontier,&depth) ;
+        bfs_bottom_up_step(graph,frontier,sol->distances,new_frontier,&depth); 
          vertex_set *tmp = frontier;
         frontier = new_frontier;
         new_frontier = tmp;
         depth++;
 
     }
-    //delete [] adj_front;
-    //delete old_count;
     
 }
 
@@ -336,19 +308,13 @@ void bfs_hybrid(Graph graph, solution *sol)
         int nf=frontier->count;
         int mu=0;
         
-        for(int i =0 ; i< frontier->count;++i){
-            
-            mf += outgoing_size(graph,frontier->vertices[i]);
-        }
-        for(int i=0;i<graph->num_nodes;++i){
-            if(sol->distances[i] == NOT_VISITED_MARKER) mu++;
-        }
+
 
         vertex_set_clear(new_frontier);
-        if(mf > mu /14) {
-            bfs_bottom_up_step(graph,frontier,sol->distances,new_frontier,&depth);
-        }else if(nf < graph->num_nodes / 24 ){
+        if(nf < graph->num_nodes /24 ){
             top_down_step(graph,frontier,new_frontier,sol->distances,&depth);
+        }else{
+            bfs_bottom_up_step(graph,frontier,sol->distances,new_frontier,&depth);
         }
 
         vertex_set *tmp = frontier;
